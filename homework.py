@@ -1,22 +1,24 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 
 @dataclass
 class InfoMessage:
     """Информационное сообщение о тренировке."""
-
     training_type: str
     duration: float
     distance: float
     speed: float
     calories: float
+    MESSAGE = ('Тип тренировки: {training_type};'
+               ' Длительность: {duration:.3f} ч.;'
+               ' Дистанция: {distance:.3f} км;'
+               ' Ср. скорость: {speed:.3f} км/ч;'
+               ' Потрачено ккал: {calories:.3f}.'
+               )
 
     def get_message(self) -> str:
-        return (f'Тип тренировки: {self.training_type}; '
-                f'Длительность: {"%.3f" % self.duration} ч.; '
-                f'Дистанция: {"%.3f" % self.distance} км; '
-                f'Ср. скорость: {"%.3f" % self.speed} км/ч; '
-                f'Потрачено ккал: {"%.3f" % self.calories}.')
+        """Получить строку сообщения."""
+        return self.MESSAGE.format(**asdict(self))
 
 
 class Training:
@@ -84,14 +86,11 @@ class SportsWalking(Training):
         self.height = height
 
     def get_spent_calories(self) -> float:
-        """Дополнительные переменные для декомпозиции функции."""
-
-        speed_m: float = self.get_mean_speed() * self.KMH_IN_MSEC
-        height_m: float = self.height / self.CM_IN_M
         return ((self.CALORIES_WEIGHT_MULTIPLIER * self.weight
-                 + (speed_m**2 / height_m)
-                 * self.CALORIES_SPEED_HEIGHT_MULTIPLIER
-                 * self.weight) * self.duration * self.MIN_IN_H)
+                 + (self.get_mean_speed() * self.KMH_IN_MSEC) ** 2
+                 / self.height * self.CM_IN_M
+                 * self.CALORIES_SPEED_HEIGHT_MULTIPLIER * self.weight)
+                * self.duration * self.MIN_IN_H)
 
 
 class Swimming(Training):
@@ -129,9 +128,8 @@ def read_package(workout_type: str, data: list) -> Training:
         'SWM': Swimming
     }
     if workout_type not in training_type:
-        return ('No such type of training!')
-    else:
-        return training_type[workout_type](*data)
+        raise ValueError('There is no known type of training!')
+    return training_type[workout_type](*data)
 
 
 def main(training: Training) -> None:
